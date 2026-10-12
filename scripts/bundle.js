@@ -51,6 +51,7 @@ const rootFiles = [
   "package.json",
   ".htaccess",
   "ecosystem.config.cjs",
+  ".env",
   ".env.example",
   ".env.production.example",
   "README.md",
