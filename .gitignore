@@ -1,0 +1,6 @@
+node_modules/
+client/dist/
+server/data/database.json
+*.log
+.env
+*.zip

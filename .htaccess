@@ -1,0 +1,42 @@
+# ==============================================================================
+# DF-EWDSS - Konfigurasi Apache / LiteSpeed untuk Niagahoster (cPanel / Cloud)
+# ==============================================================================
+
+# 1. Pastikan RewriteEngine Aktif
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+
+    # Paksa HTTPS (Rekomendasi Niagahoster / SSL aktif)
+    RewriteCond %{HTTPS} !=on
+    RewriteCond %{HTTP:X-Forwarded-Proto} !https
+    RewriteCond %{REQUEST_URI} !^/\.well-known
+    RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+</IfModule>
+
+# 2. Header Keamanan & CORS
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-XSS-Protection "1; mode=block"
+    Header set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
+
+# 3. Kompresi Gzip / Brotli untuk Performa Cepat
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/plain text/html text/xml text/css application/xml application/xhtml+xml application/rss+xml application/javascript application/x-javascript application/json
+</IfModule>
+
+# 4. Keterangan Setup Node.js di cPanel Niagahoster:
+# - Jika menggunakan fitur cPanel "Setup Node.js App" (CloudLinux Passenger),
+#   cPanel akan otomatis menambahkan blok "PASSENGER CONFIGURATION" di file ini.
+# - Startup file: app.js
+# - Application root: sesuaikan dengan folder upload Anda (misal: /home/username/indonesian_power)
+#
+# - JIKA Anda menjalankan Node.js mandiri via SSH/PM2 di Port 4000 dan ingin Reverse Proxy:
+#   Aktifkan baris di bawah ini dengan menghapus tanda pagar (#):
+#
+# RewriteCond %{REQUEST_URI} !^/\.well-known
+# RewriteCond %{HTTP:Upgrade} =websocket [NC]
+# RewriteRule ^(.*)$ ws://127.0.0.1:4000/$1 [P,L]
+# RewriteCond %{REQUEST_URI} !^/\.well-known
+# RewriteRule ^(.*)$ http://127.0.0.1:4000/$1 [P,L]
