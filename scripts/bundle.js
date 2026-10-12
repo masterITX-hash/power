@@ -66,6 +66,8 @@ addFileToZip(path.join(rootDir, "server/package.json"), "server/package.json");
 addFileToZip(path.join(rootDir, "server/src/index.js"), "server/src/index.js");
 addFileToZip(path.join(rootDir, "server/src/engine.js"), "server/src/engine.js");
 addFileToZip(path.join(rootDir, "server/src/store.js"), "server/src/store.js");
+addFileToZip(path.join(rootDir, "server/src/db.js"), "server/src/db.js");
+addFileToZip(path.join(rootDir, "server/data/schema.sql"), "server/data/schema.sql");
 addFileToZip(path.join(rootDir, "server/data/.gitkeep"), "server/data/.gitkeep");
 
 // Tambahkan hasil build frontend
