@@ -1,0 +1,74 @@
+-- DF-EWDSS MySQL Database Schema for Niagahoster
+-- Database: u389110718_power12
+
+CREATE TABLE IF NOT EXISTS `users` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `name` VARCHAR(100) NOT NULL,
+  `email` VARCHAR(150) NOT NULL UNIQUE,
+  `role` VARCHAR(50) NOT NULL DEFAULT 'operator',
+  `password_hash` VARCHAR(255) NOT NULL,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `units` (
+  `id` INT PRIMARY KEY,
+  `code` VARCHAR(50) NOT NULL,
+  `name` VARCHAR(100) NOT NULL,
+  `plant` VARCHAR(150) NOT NULL,
+  `location` VARCHAR(100) NOT NULL,
+  `filter_name` VARCHAR(100) NOT NULL,
+  `status` VARCHAR(20) NOT NULL DEFAULT 'NORMAL',
+  `risk_score` INT NOT NULL DEFAULT 0,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `thresholds` (
+  `id` INT PRIMARY KEY DEFAULT 1,
+  `dp_normal` DECIMAL(5,2) NOT NULL DEFAULT 1.40,
+  `dp_warning` DECIMAL(5,2) NOT NULL DEFAULT 2.00,
+  `dp_critical` DECIMAL(5,2) NOT NULL DEFAULT 2.60,
+  `design_flow` INT NOT NULL DEFAULT 6500,
+  `rate_warning` DECIMAL(5,2) NOT NULL DEFAULT 0.25,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `sensor_data` (
+  `id` VARCHAR(100) PRIMARY KEY,
+  `unit_id` INT NOT NULL,
+  `timestamp` VARCHAR(50) NOT NULL,
+  `pressure_inlet` DECIMAL(6,2) NOT NULL,
+  `pressure_outlet` DECIMAL(6,2) NOT NULL,
+  `differential_pressure` DECIMAL(6,2) NOT NULL,
+  `flow_rate` INT NOT NULL,
+  `temperature` DECIMAL(5,2) NOT NULL,
+  `pump_current` DECIMAL(6,2) NOT NULL,
+  `valve_position` INT NOT NULL,
+  `sensor_status` VARCHAR(20) NOT NULL DEFAULT 'ONLINE',
+  `risk_score` INT DEFAULT 0,
+  `status` VARCHAR(20) DEFAULT 'NORMAL',
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX `idx_unit_time` (`unit_id`, `created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `alarms` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `unit_id` INT NOT NULL,
+  `code` VARCHAR(50) NOT NULL,
+  `name` VARCHAR(150) NOT NULL,
+  `level` VARCHAR(20) NOT NULL,
+  `message` TEXT NOT NULL,
+  `status` VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
+  `triggered_at` VARCHAR(50) NOT NULL,
+  `acknowledged_at` VARCHAR(50) NULL,
+  `resolved_at` VARCHAR(50) NULL,
+  `note` TEXT NULL,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `audit_logs` (
+  `id` BIGINT PRIMARY KEY,
+  `user_id` INT NOT NULL,
+  `action` VARCHAR(50) NOT NULL,
+  `description` TEXT NOT NULL,
+  `created_at` VARCHAR(50) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

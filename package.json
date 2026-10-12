@@ -4,7 +4,10 @@
   "private": true,
   "type": "module",
   "main": "app.js",
-  "workspaces": ["client", "server"],
+  "workspaces": [
+    "client",
+    "server"
+  ],
   "engines": {
     "node": ">=20.0.0"
   },
@@ -24,6 +27,7 @@
     "express-rate-limit": "^7.5.0",
     "fflate": "^0.8.2",
     "jsonwebtoken": "^9.0.2",
+    "mysql2": "^3.24.5",
     "pdfkit": "^0.16.0",
     "socket.io": "^4.8.1"
   },
@@ -31,4 +35,3 @@
     "concurrently": "^9.1.2"
   }
 }
-

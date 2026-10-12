@@ -12,7 +12,16 @@ import { strToU8, zipSync } from "fflate";
 import PDFDocument from "pdfkit";
 import { Server } from "socket.io";
 import { calculateRisk, recommendation } from "./engine.js";
-import { createReading, getStore, persist } from "./store.js";
+import {
+  createReading,
+  getStore,
+  persist,
+  initializeStore,
+  saveReadingToDb,
+  saveAlarmToDb,
+  saveThresholdsToDb,
+  saveAuditLogToDb
+} from "./store.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -20,6 +29,9 @@ const __dirname = path.dirname(__filename);
 // Load .env from root or local dir
 dotenv.config({ path: path.resolve(__dirname, "../../.env") });
 dotenv.config();
+
+// Initialize MySQL or JSON store asynchronously on startup
+initializeStore().catch((err) => console.error("Database boot warning:", err.message));
 
 const PORT = process.env.PORT || 4000;
 const JWT_SECRET = process.env.JWT_SECRET || "df-ewdss-local-development-secret";
@@ -84,8 +96,10 @@ app.post("/api/auth/login", async (req, res) => {
   }
   const safeUser = publicUser(user);
   const token = jwt.sign(safeUser, JWT_SECRET, { expiresIn: "8h" });
-  getStore().auditLogs.push({ id: Date.now(), user_id: user.id, action: "LOGIN", description: "Login berhasil", created_at: new Date().toISOString() });
+  const log = { id: Date.now(), user_id: user.id, action: "LOGIN", description: "Login berhasil", created_at: new Date().toISOString() };
+  getStore().auditLogs.push(log);
   persist();
+  saveAuditLogToDb(log);
   res.json({ token, user: safeUser });
 });
 
@@ -129,9 +143,11 @@ function updateAlarm(req, res, status) {
   alarm.status = status;
   alarm.note = req.body?.note || alarm.note;
   alarm[status === "RESOLVED" ? "resolved_at" : "acknowledged_at"] = new Date().toISOString();
-  alarm.updated_by = req.user.id;
-  getStore().auditLogs.push({ id: Date.now(), user_id: req.user.id, action: `ALARM_${status}`, description: `Alarm #${alarm.id}`, created_at: new Date().toISOString() });
+  const log = { id: Date.now(), user_id: req.user.id, action: `ALARM_${status}`, description: `Alarm #${alarm.id}`, created_at: new Date().toISOString() };
+  getStore().auditLogs.push(log);
   persist();
+  saveAlarmToDb(alarm);
+  saveAuditLogToDb(log);
   io.emit("alarm:updated", alarm);
   res.json(alarm);
 }
@@ -151,6 +167,7 @@ app.put("/api/settings/thresholds", requireAdmin, (req, res) => {
   if (!(req.body.dp_normal < req.body.dp_warning && req.body.dp_warning < req.body.dp_critical)) return res.status(400).json({ message: "Urutan threshold DP harus normal < warning < critical." });
   getStore().thresholds = Object.fromEntries(fields.map((field) => [field, Number(req.body[field])]));
   persist();
+  saveThresholdsToDb(getStore().thresholds);
   res.json(getStore().thresholds);
 });
 
@@ -234,13 +251,16 @@ function processReading(unit, item) {
     if (!openAlarm) {
       const alarm = { id: Math.max(0, ...store.alarms.map((a) => a.id)) + 1, unit_id: unit.id, code, name: risk.status === "OFFLINE" ? "Sensor tidak terhubung" : `Risiko filter ${risk.status.toLowerCase()}`, level: risk.status === "OFFLINE" ? "CRITICAL" : risk.status, message: recommendation(risk.status), status: "ACTIVE", triggered_at: item.timestamp, note: "" };
       store.alarms.push(alarm);
+      saveAlarmToDb(alarm);
       io.emit("alarm:new", { ...alarm, unit });
     } else if (risk.status === "CRITICAL") {
       openAlarm.level = "CRITICAL";
       openAlarm.message = recommendation(risk.status);
+      saveAlarmToDb(openAlarm);
     }
   }
   persist();
+  saveReadingToDb(item);
   io.emit("sensor:update", { unit: { ...unit, latest: item, recommendation: recommendation(unit.status) }, summary: buildSummary() });
 }
 

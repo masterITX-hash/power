@@ -84,6 +84,15 @@ function reading(unitId, timestamp, dp, flow, sensorStatus) {
   };
 }
 
+import {
+  initDatabase,
+  loadStateFromDb,
+  saveReadingToDb,
+  saveAlarmToDb,
+  saveThresholdsToDb,
+  saveAuditLogToDb
+} from "./db.js";
+
 fs.mkdirSync(directory, { recursive: true });
 let data;
 try {
@@ -93,9 +102,37 @@ try {
   persist();
 }
 
+export async function initializeStore() {
+  try {
+    const pool = await initDatabase(data);
+    if (pool) {
+      const dbState = await loadStateFromDb();
+      if (dbState) {
+        if (dbState.users?.length) data.users = dbState.users;
+        if (dbState.units?.length) data.units = dbState.units;
+        if (dbState.thresholds) data.thresholds = dbState.thresholds;
+        if (dbState.alarms?.length) data.alarms = dbState.alarms;
+        if (dbState.sensorData?.length) data.sensorData = dbState.sensorData;
+        if (dbState.auditLogs?.length) data.auditLogs = dbState.auditLogs;
+        console.log("📊 Data state aktif tersinkronisasi dengan MySQL Niagahoster.");
+      }
+    }
+  } catch (err) {
+    console.error("Inisialisasi MySQL error:", err.message);
+  }
+}
+
 export function getStore() { return data; }
-export function persist() { fs.writeFileSync(file, JSON.stringify(data, null, 2)); }
+export function persist() {
+  try {
+    fs.writeFileSync(file, JSON.stringify(data, null, 2));
+  } catch (e) {
+    console.error("Gagal menulis file store:", e.message);
+  }
+}
 export function createReading(unitId, timestamp, dp, flow, status = "ONLINE") { return reading(unitId, timestamp, dp, flow, status); }
 export function resetStore() { data = seed(); persist(); return data; }
+export { saveReadingToDb, saveAlarmToDb, saveThresholdsToDb, saveAuditLogToDb };
 
 function round(value) { return Math.round(value * 100) / 100; }
+
