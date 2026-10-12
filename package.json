@@ -5,6 +5,9 @@
   "type": "module",
   "main": "app.js",
   "workspaces": ["client", "server"],
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "scripts": {
     "dev": "concurrently -n API,WEB -c cyan,blue \"npm run dev -w server\" \"npm run dev -w client\"",
     "build": "npm run build -w client",
